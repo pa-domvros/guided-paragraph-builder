@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guided Paragraph Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Georgia', 'Times New Roman', Times, serif;
+        }
+        .hidden {
+            display: none;
+        }
+        /* Simple transition for the result box */
+        #result-container, #model-result-container {
+            transition: all 0.5s ease-in-out;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+        }
+        #result-container.visible, #model-result-container.visible {
+            max-height: 1000px; /* Arbitrary large number */
+            opacity: 1;
+            margin-top: 1.5rem; /* 6 */
+        }
+        
+        /* Dice styles */
+        #dice-face {
+            width: 120px;
+            height: 120px;
+            cursor: pointer;
+            transition: transform 0.2s ease-out;
+            margin: 0 auto;
+        }
+        #dice-face:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+        #dice-image {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Shake animation */
+        .rolling {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+          10%, 90% { transform: translate3d(-1px, 0, 0); }
+          20%, 80% { transform: translate3d(2px, 0, 0); }
+          30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+          40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* Dropdown styles */
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27292.4%27%20height%3D%27292.4%27%3E%3Cpath%20fill%3D%27%236B7280%27%20d%3D%27M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-13%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2013l128%20128c3.6%203.6%207.8%205.4%2013%205.4s9.4-1.8%2013-5.4L287%2095c3.6-3.6%205.4-7.8%205.4-13%200-5-1.8-9.2-5.4-12.8z%27%2F%3E%3C%2Fsvg%3E");
+            background-position: right 0.75rem center;
+            background-repeat: no-repeat;
+            background-size: 0.65em auto;
+            padding-right: 2.5rem;
+        }
+
+        /* --- UPDATED MINIMAL PRINT STYLES --- */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body > * {
+                display: none !important;
+            }
+            #main-builder-wrapper {
+                display: block !important;
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+            }
+            #main-builder-wrapper .max-w-3xl > .text-center {
+                display: none !important;
+            }
+            #main-builder-wrapper .max-w-3xl .space-y-8 > * {
+                display: none !important;
+            }
+            #main-builder-wrapper .max-w-3xl .space-y-8 > #result-container {
+                display: block !important;
+                max-height: none !important;
+                opacity: 1 !important;
+                margin-top: 0 !important; 
+                border: none !important;
+                box-shadow: none !important;
+            }
+            #result-container > div {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+            }
+            /* Hide all children of the result box... */
+            #result-container .bg-stone-50 > * {
+                display: none !important;
+            }
+            /* ...EXCEPT for the printed topic and final paragraph. */
+            #result-container .bg-stone-50 > #printedTopic,
+            #result-container .bg-stone-50 > #finalParagraph {
+                display: block !important;
+                font-family: 'Times New Roman', Times, serif;
+                color: #000 !important;
+                background: #fff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            /* Specific styles for the topic */
+            #printedTopic {
+                font-size: 14pt;
+                font-weight: bold;
+                margin-bottom: 1rem !important;
+            }
+            /* Specific styles for the paragraph */
+            #finalParagraph {
+                font-size: 12pt;
+                line-height: 1.5;
+                white-space: pre-wrap; 
+            }
+        }
+
+    </style>
+</head>
+<body class="bg-stone-100 text-gray-800 p-4 md:p-8">
+
+    <header class="max-w-3xl mx-auto mb-8 flex items-center justify-center gap-4 no-print">
+        <img src="pdhub-logo.png" alt="EFL Hub Logo" class="h-20 w-20 rounded-full border-2 border-gray-300 shadow-md">
+        <h1 class="text-3xl md:text-4xl font-bold text-red-800">
+            Guided Paragraph Builder
+        </h1>
+    </header>
+
+    <div id="step-1-wrapper" class="max-w-3xl mx-auto bg-white shadow-xl rounded-2xl p-6 md:p-10 mb-8 no-print">
+        
+        <div class="text-center mb-6">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+                Step 1: Get Your Topic
+            </h2>
+            <p class="text-lg text-gray-600">
+                Tap the die to get a random topic for your paragraph.
+            </p>
+        </div>
+
+        <div id="dice-container" class="py-4">
+            <div id="dice-face">
+                <img id="dice-image" src="dice-question.png" alt="Click to roll the die">
+            </div>
+        </div>
+        <p id="roll-result" class="text-center text-2xl font-semibold text-red-800 min-h-[2em]">Your fate awaits...</p>
+
+        <div id="model-builder-container" class="hidden space-y-6 mt-6 pt-6 border-t border-gray-200">
+            <h3 id="model-topic-title" class="text-2xl font-semibold text-gray-800 text-center">...</h3>
+            
+            <p class="text-center text-gray-600">Use the dropdowns to assemble a <strong class="font-semibold">model paragraph</strong> for your topic. This is just an example to help you.</p>
+
+            <div>
+                <label for="model-topic-sentence" class="block text-sm font-medium text-gray-700 mb-1">Topic Sentence (Main Idea)</label>
+                <select id="model-topic-sentence" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors bg-white"></select>
+            </div>
+            
+            <div>
+                <label for="model-supporting-1" class="block text-sm font-medium text-gray-700 mb-1">Supporting Sentence 1 (Example/Reason)</label>
+                <select id="model-supporting-1" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors bg-white"></select>
+            </div>
+            
+            <div>
+                <label for="model-supporting-2" class="block text-sm font-medium text-gray-700 mb-1">Supporting Sentence 2 (More Detail)</label>
+                <select id="model-supporting-2" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors bg-white"></select>
+            </div>
+            
+            <div>
+                <label for="model-concluding" class="block text-sm font-medium text-gray-700 mb-1">Concluding Sentence (Summary)</label>
+                <select id="model-concluding" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors bg-white"></select>
+            </div>
+
+            <div class="text-center pt-4">
+                <button id="assemble-model-button" class="bg-red-700 text-white px-8 py-3 rounded-lg font-medium text-lg shadow-md hover:bg-red-800 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                    Assemble Model Paragraph
+                </button>
+            </div>
+
+            <div id="model-result-container" class="relative">
+                <div class="bg-stone-50 border border-stone-200 rounded-lg p-6">
+                    <h4 class="text-xl font-semibold text-gray-800 mb-4">Your Assembled Model:</h4>
+                    <p id="model-paragraph" class="text-base text-gray-700 leading-relaxed">...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="next-step-container" class="hidden text-center mt-8">
+            <button id="show-main-builder-button" class="w-full md:w-auto bg-amber-600 text-white px-8 py-3 rounded-lg font-medium text-lg shadow-md hover:bg-amber-700 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 no-print">
+                Great! Now write your own (Step 2) &darr;
+            </button>
+        </div>
+    </div>
+
+    <div id="main-builder-wrapper" class="hidden">
+        <div class="max-w-3xl mx-auto bg-white shadow-xl rounded-2xl p-6 md:p-10">
+            
+            <div class="text-center mb-8">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+                    Step 2: Write Your Own Paragraph
+                </h2>
+                <p class="text-lg text-gray-600">
+                    Use your topic to build your own strong, unified paragraph.
+                </p>
+            </div>
+
+            <div class="space-y-8">
+
+                <div class="no-print">
+                    <label for="studentTopic" class="block text-xl font-semibold text-gray-800 mb-2">Choose Your Topic</label>
+                    <p class="text-sm text-gray-500 mb-3">Select a topic from the list to write about.</p>
+                    <select id="studentTopic" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors bg-white">
+                        <option value="" selected disabled>-- Please select a topic --</option>
+                        <option value="The advantages of reading books">The advantages of reading books</option>
+                        <option value="My favorite holiday and why">My favorite holiday and why</option>
+                        <option value="The impact of technology on education">The impact of technology on education</option>
+                        <option value="Why learning history is important">Why learning history is important</option>
+                        <option value="The challenges of living in a big city">The challenges of living in a big city</option>
+                        <option value="The benefits of eating healthy food">The benefits of eating healthy food</option>
+                        <option value="How to be a good friend">How to be a good friend</option>
+                        <option value="My dream job and how I'll get it">My dream job and how I'll get it</option>
+                        <option value="The importance of protecting animals">The importance of protecting animals</option>
+                        <option value="A description of my hometown">A description of my hometown</option>
+                        <option value="The pros and cons of online shopping">The pros and cons of online shopping</option>
+                        <option value="Why we should learn to cook">Why we should learn to cook</option>
+                        <option value="The role of music in my life">The role of music in my life</option>
+                        <option value="How to reduce stress in daily life">How to reduce stress in daily life</option>
+                        <option value="The future of transportation (e.g., electric cars)">The future of transportation (e.g., electric cars)</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="topicSentence" class="block text-xl font-semibold text-gray-800 mb-2">The Topic Sentence</label>
+                    <p class="text-sm text-gray-500 mb-3 no-print">This is the most important sentence. Use your selected topic to write the main idea.</p>
+                    <textarea id="topicSentence" rows="2" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" placeholder="e.g., 'Learning a new language offers numerous cognitive benefits.'"></textarea>
+                </div>
+
+                <div>
+                    <label for="supportingSentences" class="block text-xl font-semibold text-gray-800 mb-2">Supporting Sentences</label>
+                    <p class="text-sm text-gray-500 mb-3 no-print">Provide the evidence, facts, examples, and explanations that support your topic sentence. (Aim for 3-5 sentences).</p>
+                    <textarea id="supportingSentences" rows="5" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" placeholder="e.g., 'Firstly, it can improve memory... Studies have shown... Additionally, bilingual individuals... '"></textarea>
+                </div>
+
+                <div>
+                    <label for="concludingSentence" class="block text-xl font-semibold text-gray-800 mb-2">The Concluding Sentence</label>
+                    <p class="text-sm text-gray-500 mb-3 no-print">This (often optional) sentence summarizes your point. It should not introduce a new idea.</p>
+                    <textarea id="concludingSentence" rows="2" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors" placeholder="e.g., 'Therefore, the mental advantages of language study are undeniable.'"></textarea>
+                </div>
+
+                <div class="no-print">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Final Review Checklist</h3>
+                    <div class="space-y-3 bg-yellow-50 p-5 rounded-lg border border-yellow-200">
+                        <div class="flex items-center">
+                            <input id="checkUnity" name="checkUnity" type="checkbox" class="h-5 w-5 text-red-700 border-gray-300 rounded focus:ring-red-500">
+                            <label for="checkUnity" class="ml-3 block text-base text-gray-700">
+                                <strong class="font-medium">Unity:</strong> Does every sentence directly support the Topic Sentence?
+                            </label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="checkCoherence" name="checkCoherence" type="checkbox" class="h-5 w-5 text-red-700 border-gray-300 rounded focus:ring-red-500">
+                            <label for="checkCoherence" class="ml-3 block text-base text-gray-700">
+                                <strong class="font-medium">Coherence:</strong> Do the sentences flow smoothly and in a logical order?
+                            </LAbel>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="checkDevelopment" name="checkDevelopment" type="checkbox" class="h-5 w-5 text-red-700 border-gray-300 rounded focus:ring-red-500">
+                            <label for="checkDevelopment" class="ml-3 block text-base text-gray-700">
+                                <strong class="font-medium">Development:</strong> Is there enough detail, evidence, or explanation?
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center pt-4 border-t border-gray-200 no-print">
+                    <button id="assembleButton" class="w-full md:w-auto bg-red-700 text-white px-8 py-3 rounded-lg font-medium text-lg shadow-md hover:bg-red-800 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                        Assemble My Paragraph
+                    </button>
+                </div>
+
+                <div id="result-container" class="relative">
+                    <div class="bg-stone-50 border border-stone-200 rounded-lg p-6">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 no-print">Your Assembled Paragraph:</h3>
+                        
+                        <h4 id="printedTopic" class="hidden text-xl font-bold mb-4"></h4>
+                        
+                        <p id="finalParagraph" class="text-base text-gray-700 leading-relaxed whitespace-pre-wrap">...</p>
+                        
+                        <div class="flex flex-col sm:flex-row gap-3 mt-6 no-print">
+                            <button id="copyButton" class="w-full sm:w-auto bg-amber-600 text-white px-5 py-2 rounded-md font-medium hover:bg-amber-700 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2">
+                                Copy to Clipboard
+                            </button>
+                            <button id="resetButton" class="w-full sm:w-auto bg-stone-400 text-stone-800 px-5 py-2 rounded-md font-medium hover:bg-stone-500 transition-colors focus:outline-none focus:ring-2 focus:ring-stone-500 focus:ring-offset-2">
+                                Start Over
+                            </button>
+                            <button id="printButton" class="w-full sm:w-auto bg-stone-700 text-white px-5 py-2 rounded-md font-medium hover:bg-stone-800 transition-colors focus:outline-none focus:ring-2 focus:ring-stone-500 focus:ring-offset-2">
+                                Print / Save as PDF
+                            </button>
+                        </div>
+                        <span id="copyMessage" class="absolute top-0 right-0 -mt-3 -mr-3 bg-black text-white text-xs font-bold py-1 px-2 rounded-full hidden no-print">Copied!</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="max-w-3xl mx-auto mt-10 text-center text-gray-500 text-sm no-print">
+        <p>✨✍️ Created by Panagiotis Domvros, English and Drama Teacher, All Rights Reserved ✍️✨</p>
+    </footer>
+
+
+    <script>
+        // --- SCRIPT (STEP 1: TOPIC ROLLER & MODEL BUILDER) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- STEP 1 ELEMENTS ---
+            const diceFace = document.getElementById('dice-face');
+            const diceImage = document.getElementById('dice-image');
+            const rollResult = document.getElementById('roll-result');
+            const modelBuilderContainer = document.getElementById('model-builder-container');
+            const modelTopicTitle = document.getElementById('model-topic-title');
+            const nextStepContainer = document.getElementById('next-step-container');
+            const showMainBuilderButton = document.getElementById('show-main-builder-button');
+            const mainBuilderWrapper = document.getElementById('main-builder-wrapper');
+
+            // --- MODEL BUILDER ELEMENTS ---
+            const selectTS = document.getElementById('model-topic-sentence');
+            const selectS1 = document.getElementById('model-supporting-1');
+            const selectS2 = document.getElementById('model-supporting-2');
+            const selectCS = document.getElementById('model-concluding');
+            const assembleModelButton = document.getElementById('assemble-model-button');
+            const modelResultContainer = document.getElementById('model-result-container');
+            const modelParagraph = document.getElementById('model-paragraph');
+
+            // --- STATE ---
+            let isRolling = false;
+
+            // --- IMAGE ASSETS ---
+            const diceImages = [
+                'dice1.png', 'dice2.png', 'dice3.png',
+                'dice4.png', 'dice5.png', 'dice6.png'
+            ];
+            const defaultImage = 'dice-question.png';
+
+            // --- B1-B2 TOPIC & PHRASE BANK ---
+            const topicBank = {
+                1: {
+                    title: 'Topic 1: The Benefits of Exercise',
+                    topicSentences: [
+                        "Regular exercise is essential for maintaining good health.",
+                        "Staying active has many positive effects on both the body and mind.",
+                        "Engaging in physical activity is one of the best ways to stay healthy."
+                    ],
+                    supporting1: [
+                        "For example, it strengthens muscles and bones, which helps prevent injuries.",
+                        "Firstly, physical activity helps to control weight by burning calories.",
+                        "One major benefit is that it improves cardiovascular health, making your heart stronger."
+                    ],
+                    supporting2: [
+                        "Additionally, exercise is a well-known stress reducer and can improve your mood.",
+                        "It also boosts energy levels, so you feel less tired during the day.",
+                        "Furthermore, studies show that active people often sleep better at night."
+                    ],
+                    concludingSentences: [
+                        "In conclusion, making time for exercise is a vital part of a healthy lifestyle.",
+                        "Therefore, everyone should try to be active for at least 30 minutes most days.",
+                        "In short, the advantages of exercise are too important to ignore."
+                    ]
+                },
+                2: {
+                    title: 'Topic 2: The Importance of Learning English',
+                    topicSentences: [
+                        "Learning English is extremely useful in today's globalized world.",
+                        "There are many reasons why learning English is an important skill.",
+                        "Speaking English opens up many new opportunities for people."
+                    ],
+                    supporting1: [
+                        "Firstly, it is the main language of international communication, business, and science.",
+                        "For one thing, it allows you to communicate with people from many different countries.",
+                        "One major advantage is that it can improve your career prospects significantly."
+                    ],
+                    supporting2: [
+                        "Moreover, a lot of the world's best movies, books, and music are in English.",
+                        "Also, knowing English makes traveling to foreign countries much easier and more enjoyable.",
+                        "Additionally, most of the information on the internet is in English."
+                    ],
+                    concludingSentences: [
+                        "In summary, the ability to speak English is a valuable tool for personal and professional growth.",
+                        "Therefore, it is clear that learning English is a worthwhile investment of time.",
+                        "To conclude, the benefits of learning English are numerous and significant."
+                    ]
+                },
+                3: {
+                    title: 'Topic 3: Pros and Cons of Social Media',
+                    topicSentences: [
+                        "Social media has dramatically changed how we interact with the world.",
+                        "Using social media platforms has both positive and negative effects.",
+                        "It is important to understand the good and bad sides of social media."
+                    ],
+                    supporting1: [
+                        "On one hand, it is a fantastic tool for connecting with friends and family, especially those far away.",
+                        "A key benefit is that it provides instant access to news and information from all over the globe.",
+                        "For example, platforms like Instagram and Twitter help people share their ideas and creativity."
+                    ],
+                    supporting2: [
+                        "On the other hand, it can be addictive and lead to people spending less time on real-world activities.",
+                        "However, it can also be a source of misinformation and cyberbullying.",
+                        "A major drawback is that it can negatively affect mental health by causing anxiety or jealousy."
+                    ],
+                    concludingSentences: [
+                        "In conclusion, social media is a powerful tool that should be used with caution.",
+                        "Therefore, it is important to find a healthy balance when using these platforms.",
+                        "In short, while social media has its benefits, we must also be aware of its risks."
+                    ]
+                },
+                4: {
+                    title: 'Topic 4: Protecting Our Environment',
+                    topicSentences: [
+                        "Protecting the environment is one of the most important challenges we face today.",
+                        "There are many simple things we can do every day to help our planet.",
+                        "Everyone has a responsibility to take care of the natural world."
+                    ],
+                    supporting1: [
+                        "One of the easiest actions is to reduce, reuse, and recycle materials like plastic and paper.",
+                        "For instance, we can save a lot of water by taking shorter showers and turning off the tap.",
+                        "Firstly, we should try to use less energy at home by turning off lights and electronics."
+                    ],
+                    supporting2: [
+                        "Another helpful change is to walk, cycle, or use public transport instead of driving a car.",
+                        "Additionally, planting trees and supporting local, eco-friendly businesses makes a big difference.",
+                        "We can also help by avoiding single-use plastics, like bags and water bottles."
+                    ],
+                    concludingSentences: [
+                        "In summary, even small changes in our daily habits can have a large positive impact.",
+                        "To conclude, if we all work together, we can make our planet cleaner and healthier.",
+                        "Therefore, it is crucial that we all take action now to protect our environment for the future."
+                    ]
+                },
+                5: {
+                    title: 'Topic 5: The Benefits of Traveling',
+                    topicSentences: [
+                        "Traveling to other countries is a wonderfully enriching experience.",
+                        "There are many reasons why traveling abroad is good for you.",
+                        "Seeing new places can change your perspective on life."
+                    ],
+                    supporting1: [
+                        "First of all, it allows you to experience new cultures, foods, and traditions firsthand.",
+                        "One major benefit is that it broadens your horizons and makes you more open-minded.",
+                        "For example, you can learn a new language or see historical sites you have only read about."
+                    ],
+                    supporting2: [
+                        "Furthermore, traveling can be a great way to escape from your daily routine and relax.",
+                        "It also teaches you to be more independent and better at solving problems.",
+                        "Additionally, you get to meet new people and make friends from all over the world."
+                    ],
+                    concludingSentences: [
+                        "In conclusion, traveling provides valuable life lessons and unforgettable memories.",
+                        "In short, it is an investment in yourself that offers numerous rewards.",
+                        "Therefore, everyone should try to travel and explore the world if they have the chance."
+                    ]
+                },
+                6: {
+                    title: 'Topic 6: The Value of Having a Hobby',
+                    topicSentences: [
+                        "Having a hobby is an important part of a balanced and happy life.",
+                        "Engaging in a regular hobby offers many benefits for your well-being.",
+                        "It is very healthy to have an activity you do just for fun."
+                    ],
+                    supporting1: [
+                        "For one thing, hobbies are a great way to reduce stress after a long day of work or school.",
+                        "A major benefit is that hobbies allow you to learn new skills and discover hidden talents.",
+                        "For example, activities like painting, playing guitar, or gardening let you express your creativity."
+                    ],
+                    supporting2: [
+                        "Furthermore, many hobbies, such as joining a sports team or a book club, help you meet new people.",
+                        "They can also improve your self-confidence as you get better at your chosen activity.",
+                        "Additionally, having a hobby can prevent boredom and give you something to look forward to."
+                    ],
+                    concludingSentences: [
+                        "In short, a hobby enriches your life by reducing stress and building skills.",
+                        "In conclusion, finding a hobby you love is excellent for both your mind and social life.",
+                        "Therefore, everyone should make time for a leisure activity that brings them joy."
+                    ]
+                }
+            };
+            
+            // --- HELPER FUNCTION to populate a <select> element ---
+            const addOptionsToSelect = (selectElement, optionsArray) => {
+                selectElement.innerHTML = ''; // Clear existing options
+                optionsArray.forEach(optionText => {
+                    const option = document.createElement('option');
+                    option.value = optionText;
+                    option.textContent = optionText;
+                    selectElement.appendChild(option);
+                });
+            };
+
+            // --- FUNCTION to set up the model builder ---
+            const populateModelBuilder = (roll) => {
+                const topicData = topicBank[roll];
+                modelTopicTitle.textContent = topicData.title;
+                addOptionsToSelect(selectTS, topicData.topicSentences);
+                addOptionsToSelect(selectS1, topicData.supporting1);
+                addOptionsToSelect(selectS2, topicData.supporting2);
+                addOptionsToSelect(selectCS, topicData.concludingSentences);
+                modelBuilderContainer.classList.remove('hidden');
+                nextStepContainer.classList.remove('hidden');
+                modelResultContainer.classList.remove('visible');
+            };
+
+            // --- FUNCTION to handle the dice roll ---
+            const rollTheDice = () => {
+                if (isRolling) return;
+                isRolling = true;
+                diceFace.classList.add('rolling');
+                diceImage.src = defaultImage;
+                rollResult.textContent = 'Rolling...';
+
+                setTimeout(() => {
+                    const roll = Math.floor(Math.random() * 6); // 0-5
+                    const rollNumber = roll + 1; // 1-6
+                    diceImage.src = diceImages[roll];
+                    rollResult.textContent = `You rolled a ${rollNumber}!`;
+                    diceFace.classList.remove('rolling');
+                    isRolling = false;
+                    populateModelBuilder(rollNumber);
+                }, 600); 
+            };
+
+            // --- EVENT LISTENERS (STEP 1) ---
+            diceFace.addEventListener('click', rollTheDice);
+            assembleModelButton.addEventListener('click', () => {
+                const ts = selectTS.value;
+                const s1 = selectS1.value;
+                const s2 = selectS2.value;
+                const cs = selectCS.value;
+                modelParagraph.textContent = `${ts} ${s1} ${s2} ${cs}`;
+                modelResultContainer.classList.add('visible');
+            });
+            showMainBuilderButton.addEventListener('click', () => {
+                mainBuilderWrapper.classList.remove('hidden');
+                mainBuilderWrapper.scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            // --- INITIALIZATION ---
+            diceImage.src = defaultImage; // Set default image on load
+        });
+
+
+        // --- SCRIPT (STEP 2: GUIDED PARAGRAPH BUILDER) ---
+        
+        // Get all elements
+        const studentTopicEl = document.getElementById('studentTopic');
+        const topicSentenceEl = document.getElementById('topicSentence');
+        const supportingSentencesEl = document.getElementById('supportingSentences');
+        const concludingSentenceEl = document.getElementById('concludingSentence');
+        
+        const checks = [
+            document.getElementById('checkUnity'),
+            document.getElementById('checkCoherence'),
+            document.getElementById('checkDevelopment')
+        ];
+
+        const assembleButton = document.getElementById('assembleButton');
+        const resultContainer = document.getElementById('result-container');
+        const printedTopicEl = document.getElementById('printedTopic'); // NEW
+        const finalParagraphEl = document.getElementById('finalParagraph');
+        
+        const copyButton = document.getElementById('copyButton');
+        const resetButton = document.getElementById('resetButton');
+        const copyMessage = document.getElementById('copyMessage');
+        const printButton = document.getElementById('printButton');
+
+        // Assemble button click listener
+        assembleButton.addEventListener('click', () => {
+            const selectedTopicText = studentTopicEl.value; // NEW
+            const topic = topicSentenceEl.value.trim();
+            const supporting = supportingSentencesEl.value.trim();
+            const concluding = concludingSentenceEl.value.trim();
+            let fullParagraph = "";
+
+            if (topic) {
+                fullParagraph += topic;
+            } else {
+                showModal("Please provide a topic sentence to start your paragraph.");
+                return;
+            }
+            if (supporting) {
+                fullParagraph += " " + supporting;
+            }
+            if (concluding) {
+                fullParagraph += " " + concluding;
+            }
+
+            // NEW: Populate the topic for printing
+            if (selectedTopicText) {
+                printedTopicEl.textContent = 'Topic: ' + selectedTopicText;
+                printedTopicEl.classList.remove('hidden'); // Make it visible on screen
+            } else {
+                printedTopicEl.textContent = ''; // Clear it if no topic is selected
+                printedTopicEl.classList.add('hidden'); // Hide it on screen
+            }
+
+            finalParagraphEl.textContent = fullParagraph;
+            resultContainer.classList.add('visible');
+_        });
+
+        // Copy button click listener
+        copyButton.addEventListener('click', () => {
+            // NEW: Add topic to the copied text
+            const topicText = printedTopicEl.textContent;
+            const paragraphText = finalParagraphEl.textContent;
+            const textToCopy = (topicText ? topicText + '\n\n' : '') + paragraphText;
+            
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = textToCopy;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            try {
+                document.execCommand('copy');
+                copyMessage.classList.remove('hidden');
+                setTimeout(() => {
+                    copyMessage.classList.add('hidden');
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                showModal("Sorry, we couldn't copy the text. Please copy it manually.");
+            }
+            document.body.removeChild(tempTextArea);
+        });
+
+        // Reset button click listener
+        resetButton.addEventListener('click', () => {
+            topicSentenceEl.value = '';
+            supportingSentencesEl.value = '';
+            concludingSentenceEl.value = '';
+            checks.forEach(check => check.checked = false);
+            finalParagraphEl.textContent = '...';
+            printedTopicEl.textContent = ''; // NEW
+            printedTopicEl.classList.add('hidden'); // NEW
+            resultContainer.classList.remove('visible');
+            
+            // Also reset the new topic dropdown
+            studentTopicEl.selectedIndex = 0;
+        });
+
+        // Print button click listener
+        printButton.addEventListener('click', () => {
+            window.print();
+        });
+
+        // Simple modal for feedback
+        function showModal(message) {
+            let modal = document.getElementById('feedback-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'feedback-modal';
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 no-print';
+                modal.innerHTML = `
+                    <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Notification</h3>
+                        <p id="modal-message" class="text-sm text-gray-600 mb-6"></p>
+                        <button id="modal-close" class="w-full bg-red-700 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-800 transition-colors">
+                            OK
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                modal.querySelector('#modal-close').addEventListener('click', () => {
+                    modal.classList.add('hidden');
+                });
+            }
+            modal.querySelector('#modal-message').textContent = message;
+            modal.classList.remove('hidden');
+        }
+
+    </script>
+</body>
+</html>
