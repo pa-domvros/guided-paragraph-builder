@@ -64,7 +64,7 @@
             padding-right: 2.5rem;
         }
 
-        /* --- UPDATED MINIMAL PRINT STYLES --- */
+        /* --- MINIMAL PRINT STYLES --- */
         @media print {
             .no-print {
                 display: none !important;
@@ -138,6 +138,7 @@
         </h1>
     </header>
 
+    <!-- STEP 1: DICE + MODEL PARAGRAPH -->
     <div id="step-1-wrapper" class="max-w-3xl mx-auto bg-white shadow-xl rounded-2xl p-6 md:p-10 mb-8 no-print">
         
         <div class="text-center mb-6">
@@ -145,7 +146,7 @@
                 Step 1: Get Your Topic
             </h2>
             <p class="text-lg text-gray-600">
-                Tap the die to get a random topic for your paragraph.
+                Tap the die to get a random topic for your model paragraph.
             </p>
         </div>
 
@@ -159,7 +160,9 @@
         <div id="model-builder-container" class="hidden space-y-6 mt-6 pt-6 border-t border-gray-200">
             <h3 id="model-topic-title" class="text-2xl font-semibold text-gray-800 text-center">...</h3>
             
-            <p class="text-center text-gray-600">Use the dropdowns to assemble a <strong class="font-semibold">model paragraph</strong> for your topic. This is just an example to help you.</p>
+            <p class="text-center text-gray-600">
+                Use the dropdowns to assemble a <strong class="font-semibold">model paragraph</strong> for your topic. This is just an example to help you.
+            </p>
 
             <div>
                 <label for="model-topic-sentence" class="block text-sm font-medium text-gray-700 mb-1">Topic Sentence (Main Idea)</label>
@@ -202,6 +205,7 @@
         </div>
     </div>
 
+    <!-- STEP 2: STUDENT PARAGRAPH BUILDER -->
     <div id="main-builder-wrapper" class="hidden">
         <div class="max-w-3xl mx-auto bg-white shadow-xl rounded-2xl p-6 md:p-10">
             
@@ -211,6 +215,11 @@
                 </h2>
                 <p class="text-lg text-gray-600">
                     Use your topic to build your own strong, unified paragraph.
+                </p>
+                <p class="text-sm text-gray-600 mt-2">
+                    <strong>Important:</strong> If your topic is about <em>advantages &amp; disadvantages</em> (pros and cons),
+                    each paragraph should focus on <strong>only one side</strong>. Write one paragraph about the advantages
+                    <em>or</em> one paragraph about the disadvantages – don’t mix both in the same paragraph.
                 </p>
             </div>
 
@@ -237,6 +246,8 @@
                         <option value="How to reduce stress in daily life">How to reduce stress in daily life</option>
                         <option value="The future of transportation (e.g., electric cars)">The future of transportation (e.g., electric cars)</option>
                     </select>
+                    <!-- Dynamic hint for pros/cons topics -->
+                    <p id="topicHint" class="mt-3 text-xs text-indigo-800 bg-indigo-50 border border-indigo-200 rounded-md px-3 py-2 hidden"></p>
                 </div>
                 
                 <div>
@@ -270,7 +281,7 @@
                             <input id="checkCoherence" name="checkCoherence" type="checkbox" class="h-5 w-5 text-red-700 border-gray-300 rounded focus:ring-red-500">
                             <label for="checkCoherence" class="ml-3 block text-base text-gray-700">
                                 <strong class="font-medium">Coherence:</strong> Do the sentences flow smoothly and in a logical order?
-                            </LAbel>
+                            </label>
                         </div>
                         <div class="flex items-center">
                             <input id="checkDevelopment" name="checkDevelopment" type="checkbox" class="h-5 w-5 text-red-700 border-gray-300 rounded focus:ring-red-500">
@@ -317,11 +328,8 @@
         <p>✨✍️ Created by Panagiotis Domvros, English and Drama Teacher, All Rights Reserved ✍️✨</p>
     </footer>
 
-
     <script>
-        // --- SCRIPT (STEP 1: TOPIC ROLLER & MODEL BUILDER) ---
         document.addEventListener('DOMContentLoaded', () => {
-            
             // --- STEP 1 ELEMENTS ---
             const diceFace = document.getElementById('dice-face');
             const diceImage = document.getElementById('dice-image');
@@ -400,26 +408,26 @@
                     ]
                 },
                 3: {
-                    title: 'Topic 3: Pros and Cons of Social Media',
+                    title: 'Topic 3: The Advantages of Social Media',
                     topicSentences: [
-                        "Social media has dramatically changed how we interact with the world.",
-                        "Using social media platforms has both positive and negative effects.",
-                        "It is important to understand the good and bad sides of social media."
+                        "Social media has many advantages for people who use it wisely.",
+                        "When used carefully, social media can be a very useful tool in our daily lives.",
+                        "There are several important benefits to using social media."
                     ],
                     supporting1: [
-                        "On one hand, it is a fantastic tool for connecting with friends and family, especially those far away.",
-                        "A key benefit is that it provides instant access to news and information from all over the globe.",
+                        "Firstly, it is a fantastic tool for connecting with friends and family, especially those far away.",
+                        "One benefit is that it provides instant access to news and information from all over the world.",
                         "For example, platforms like Instagram and Twitter help people share their ideas and creativity."
                     ],
                     supporting2: [
-                        "On the other hand, it can be addictive and lead to people spending less time on real-world activities.",
-                        "However, it can also be a source of misinformation and cyberbullying.",
-                        "A major drawback is that it can negatively affect mental health by causing anxiety or jealousy."
+                        "In addition, social media can be a great way to join communities and learn new skills.",
+                        "It also allows students to work together on school projects and share useful resources.",
+                        "Another advantage is that small businesses can advertise their products to many people for little cost."
                     ],
                     concludingSentences: [
-                        "In conclusion, social media is a powerful tool that should be used with caution.",
-                        "Therefore, it is important to find a healthy balance when using these platforms.",
-                        "In short, while social media has its benefits, we must also be aware of its risks."
+                        "In conclusion, social media offers many benefits as long as we use it responsibly.",
+                        "In short, the advantages of social media can make our lives easier and more interesting.",
+                        "Therefore, it is clear that social media can be very positive when people use it in a smart way."
                     ]
                 },
                 4: {
@@ -492,20 +500,20 @@
                     ]
                 }
             };
-            
+
             // --- HELPER FUNCTION to populate a <select> element ---
-            const addOptionsToSelect = (selectElement, optionsArray) => {
-                selectElement.innerHTML = ''; // Clear existing options
+            function addOptionsToSelect(selectElement, optionsArray) {
+                selectElement.innerHTML = '';
                 optionsArray.forEach(optionText => {
                     const option = document.createElement('option');
                     option.value = optionText;
                     option.textContent = optionText;
                     selectElement.appendChild(option);
                 });
-            };
+            }
 
             // --- FUNCTION to set up the model builder ---
-            const populateModelBuilder = (roll) => {
+            function populateModelBuilder(roll) {
                 const topicData = topicBank[roll];
                 modelTopicTitle.textContent = topicData.title;
                 addOptionsToSelect(selectTS, topicData.topicSentences);
@@ -515,10 +523,10 @@
                 modelBuilderContainer.classList.remove('hidden');
                 nextStepContainer.classList.remove('hidden');
                 modelResultContainer.classList.remove('visible');
-            };
+            }
 
             // --- FUNCTION to handle the dice roll ---
-            const rollTheDice = () => {
+            function rollTheDice() {
                 if (isRolling) return;
                 isRolling = true;
                 diceFace.classList.add('rolling');
@@ -534,10 +542,11 @@
                     isRolling = false;
                     populateModelBuilder(rollNumber);
                 }, 600); 
-            };
+            }
 
             // --- EVENT LISTENERS (STEP 1) ---
             diceFace.addEventListener('click', rollTheDice);
+
             assembleModelButton.addEventListener('click', () => {
                 const ts = selectTS.value;
                 const s1 = selectS1.value;
@@ -546,143 +555,156 @@
                 modelParagraph.textContent = `${ts} ${s1} ${s2} ${cs}`;
                 modelResultContainer.classList.add('visible');
             });
+
             showMainBuilderButton.addEventListener('click', () => {
                 mainBuilderWrapper.classList.remove('hidden');
                 mainBuilderWrapper.scrollIntoView({ behavior: 'smooth' });
             });
+
+            // Set default dice image
+            diceImage.src = defaultImage;
+
+            // --- STEP 2 ELEMENTS ---
+            const studentTopicEl = document.getElementById('studentTopic');
+            const topicSentenceEl = document.getElementById('topicSentence');
+            const supportingSentencesEl = document.getElementById('supportingSentences');
+            const concludingSentenceEl = document.getElementById('concludingSentence');
+            const topicHintEl = document.getElementById('topicHint');
             
-            // --- INITIALIZATION ---
-            diceImage.src = defaultImage; // Set default image on load
-        });
+            const checks = [
+                document.getElementById('checkUnity'),
+                document.getElementById('checkCoherence'),
+                document.getElementById('checkDevelopment')
+            ];
 
-
-        // --- SCRIPT (STEP 2: GUIDED PARAGRAPH BUILDER) ---
-        
-        // Get all elements
-        const studentTopicEl = document.getElementById('studentTopic');
-        const topicSentenceEl = document.getElementById('topicSentence');
-        const supportingSentencesEl = document.getElementById('supportingSentences');
-        const concludingSentenceEl = document.getElementById('concludingSentence');
-        
-        const checks = [
-            document.getElementById('checkUnity'),
-            document.getElementById('checkCoherence'),
-            document.getElementById('checkDevelopment')
-        ];
-
-        const assembleButton = document.getElementById('assembleButton');
-        const resultContainer = document.getElementById('result-container');
-        const printedTopicEl = document.getElementById('printedTopic'); // NEW
-        const finalParagraphEl = document.getElementById('finalParagraph');
-        
-        const copyButton = document.getElementById('copyButton');
-        const resetButton = document.getElementById('resetButton');
-        const copyMessage = document.getElementById('copyMessage');
-        const printButton = document.getElementById('printButton');
-
-        // Assemble button click listener
-        assembleButton.addEventListener('click', () => {
-            const selectedTopicText = studentTopicEl.value; // NEW
-            const topic = topicSentenceEl.value.trim();
-            const supporting = supportingSentencesEl.value.trim();
-            const concluding = concludingSentenceEl.value.trim();
-            let fullParagraph = "";
-
-            if (topic) {
-                fullParagraph += topic;
-            } else {
-                showModal("Please provide a topic sentence to start your paragraph.");
-                return;
-            }
-            if (supporting) {
-                fullParagraph += " " + supporting;
-            }
-            if (concluding) {
-                fullParagraph += " " + concluding;
-            }
-
-            // NEW: Populate the topic for printing
-            if (selectedTopicText) {
-                printedTopicEl.textContent = 'Topic: ' + selectedTopicText;
-                printedTopicEl.classList.remove('hidden'); // Make it visible on screen
-            } else {
-                printedTopicEl.textContent = ''; // Clear it if no topic is selected
-                printedTopicEl.classList.add('hidden'); // Hide it on screen
-            }
-
-            finalParagraphEl.textContent = fullParagraph;
-            resultContainer.classList.add('visible');
-_        });
-
-        // Copy button click listener
-        copyButton.addEventListener('click', () => {
-            // NEW: Add topic to the copied text
-            const topicText = printedTopicEl.textContent;
-            const paragraphText = finalParagraphEl.textContent;
-            const textToCopy = (topicText ? topicText + '\n\n' : '') + paragraphText;
+            const assembleButton = document.getElementById('assembleButton');
+            const resultContainer = document.getElementById('result-container');
+            const printedTopicEl = document.getElementById('printedTopic');
+            const finalParagraphEl = document.getElementById('finalParagraph');
             
-            const tempTextArea = document.createElement('textarea');
-            tempTextArea.value = textToCopy;
-            document.body.appendChild(tempTextArea);
-            tempTextArea.select();
-            try {
-                document.execCommand('copy');
-                copyMessage.classList.remove('hidden');
-                setTimeout(() => {
-                    copyMessage.classList.add('hidden');
-                }, 2000);
-            } catch (err) {
-                console.error('Failed to copy text: ', err);
-                showModal("Sorry, we couldn't copy the text. Please copy it manually.");
-            }
-            document.body.removeChild(tempTextArea);
-        });
+            const copyButton = document.getElementById('copyButton');
+            const resetButton = document.getElementById('resetButton');
+            const copyMessage = document.getElementById('copyMessage');
+            const printButton = document.getElementById('printButton');
 
-        // Reset button click listener
-        resetButton.addEventListener('click', () => {
-            topicSentenceEl.value = '';
-            supportingSentencesEl.value = '';
-            concludingSentenceEl.value = '';
-            checks.forEach(check => check.checked = false);
-            finalParagraphEl.textContent = '...';
-            printedTopicEl.textContent = ''; // NEW
-            printedTopicEl.classList.add('hidden'); // NEW
-            resultContainer.classList.remove('visible');
-            
-            // Also reset the new topic dropdown
-            studentTopicEl.selectedIndex = 0;
-        });
-
-        // Print button click listener
-        printButton.addEventListener('click', () => {
-            window.print();
-        });
-
-        // Simple modal for feedback
-        function showModal(message) {
-            let modal = document.getElementById('feedback-modal');
-            if (!modal) {
-                modal = document.createElement('div');
-                modal.id = 'feedback-modal';
-                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 no-print';
-                modal.innerHTML = `
-                    <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Notification</h3>
-                        <p id="modal-message" class="text-sm text-gray-600 mb-6"></p>
-                        <button id="modal-close" class="w-full bg-red-700 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-800 transition-colors">
-                            OK
-                        </button>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-                modal.querySelector('#modal-close').addEventListener('click', () => {
-                    modal.classList.add('hidden');
+            // --- Dynamic hint for pros/cons topics ---
+            if (studentTopicEl) {
+                studentTopicEl.addEventListener('change', () => {
+                    const value = (studentTopicEl.value || '').toLowerCase();
+                    if (value.includes('pros and cons') || value.includes('advantages and disadvantages')) {
+                        topicHintEl.textContent = "For this exercise, write ONE paragraph about just one side: EITHER the advantages OR the disadvantages. In a longer text, you would normally use separate paragraphs for each side.";
+                        topicHintEl.classList.remove('hidden');
+                    } else {
+                        topicHintEl.textContent = '';
+                        topicHintEl.classList.add('hidden');
+                    }
                 });
             }
-            modal.querySelector('#modal-message').textContent = message;
-            modal.classList.remove('hidden');
-        }
 
+            // Assemble button click listener
+            assembleButton.addEventListener('click', () => {
+                const selectedTopicText = studentTopicEl.value;
+                const topic = topicSentenceEl.value.trim();
+                const supporting = supportingSentencesEl.value.trim();
+                const concluding = concludingSentenceEl.value.trim();
+                let fullParagraph = "";
+
+                if (topic) {
+                    fullParagraph += topic;
+                } else {
+                    showModal("Please provide a topic sentence to start your paragraph.");
+                    return;
+                }
+                if (supporting) {
+                    fullParagraph += " " + supporting;
+                }
+                if (concluding) {
+                    fullParagraph += " " + concluding;
+                }
+
+                // Populate the topic for printing
+                if (selectedTopicText) {
+                    printedTopicEl.textContent = 'Topic: ' + selectedTopicText;
+                    printedTopicEl.classList.remove('hidden');
+                } else {
+                    printedTopicEl.textContent = '';
+                    printedTopicEl.classList.add('hidden');
+                }
+
+                finalParagraphEl.textContent = fullParagraph;
+                resultContainer.classList.add('visible');
+            });
+
+            // Copy button click listener
+            copyButton.addEventListener('click', () => {
+                const topicText = printedTopicEl.textContent;
+                const paragraphText = finalParagraphEl.textContent;
+                const textToCopy = (topicText ? topicText + '\n\n' : '') + paragraphText;
+                
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = textToCopy;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                try {
+                    document.execCommand('copy');
+                    copyMessage.classList.remove('hidden');
+                    setTimeout(() => {
+                        copyMessage.classList.add('hidden');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    showModal("Sorry, we couldn't copy the text. Please copy it manually.");
+                }
+                document.body.removeChild(tempTextArea);
+            });
+
+            // Reset button click listener
+            resetButton.addEventListener('click', () => {
+                topicSentenceEl.value = '';
+                supportingSentencesEl.value = '';
+                concludingSentenceEl.value = '';
+                checks.forEach(check => { if (check) check.checked = false; });
+                finalParagraphEl.textContent = '...';
+                printedTopicEl.textContent = '';
+                printedTopicEl.classList.add('hidden');
+                resultContainer.classList.remove('visible');
+                
+                // Also reset the topic dropdown
+                if (studentTopicEl) studentTopicEl.selectedIndex = 0;
+                topicHintEl.textContent = '';
+                topicHintEl.classList.add('hidden');
+            });
+
+            // Print button click listener
+            printButton.addEventListener('click', () => {
+                window.print();
+            });
+
+            // Simple modal for feedback
+            function showModal(message) {
+                let modal = document.getElementById('feedback-modal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'feedback-modal';
+                    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 no-print';
+                    modal.innerHTML = `
+                        <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Notification</h3>
+                            <p id="modal-message" class="text-sm text-gray-600 mb-6"></p>
+                            <button id="modal-close" class="w-full bg-red-700 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-800 transition-colors">
+                                OK
+                            </button>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                    modal.querySelector('#modal-close').addEventListener('click', () => {
+                        modal.classList.add('hidden');
+                    });
+                }
+                modal.querySelector('#modal-message').textContent = message;
+                modal.classList.remove('hidden');
+            }
+        });
     </script>
 </body>
 </html>
